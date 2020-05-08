@@ -26,24 +26,32 @@ function parseGetParams(str = '') {
 }
 
 function validCookies(cookie = '') {
-    const cookies = cookie.split(';');
+    const cookies = cookie.split(/\s*;\s*/);
     const check = cookies.find((c) => c.startsWith(cookieName));
     if (!check) {
+        console.log('@ No check cookies', check, 'cookieName=', cookieName, 'cookies', cookies);
         return false;
     }
 
     const parts = check.slice(cookieName.length + 1).split('^');
     if (parts.length !== 2) {
+        console.log('@ No parts', parts);
         return false;
     }
 
     if (shaSignature(parts[1]) !== parts[0]) {
+        console.log('@ SHA is different', parts, shaSignature(parts[1]));
         return false;
     }
 
     const userData = parts[1].split('|');
     if (userData.length !== 4) {
+        console.log('@ wron user data', userData);
         return false;
+    }
+
+    if (Number(userData[3]) < new Date().getTime()) {
+        console.log('@ bad date ', Number(userData[3]), new Date().getTime());
     }
     return Number(userData[3]) > new Date().getTime();
 }
@@ -68,6 +76,7 @@ function fetchUserData(code) {
 }
 
 http.createServer(function (request, response) {
+    console.log('--> req', request.url, request.headers.cookie)
     if (request.url.startsWith('/auth')) {
         const params = parseGetParams(request.url.split('/auth?')[1]);
         fetchUserData(params.code)
